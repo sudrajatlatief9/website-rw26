@@ -32,7 +32,15 @@
       { nama: "Taman Baca", deskripsi: "Literasi anak", icon: "bi-book" },
       { nama: "Taman Warga", deskripsi: "Ruang terbuka", icon: "bi-flower1" }
     ],
-    organization: { rw: [] }
+    organization: {
+      rw: [
+        { jabatan: "Ketua RW", nama: "Pengurus RW 26" },
+        { jabatan: "Sekretaris", nama: "Sekretariat RW 26" },
+        { jabatan: "Bendahara", nama: "Bendahara RW 26" }
+      ],
+      "bank-sampah": [],
+      pokmas: []
+    }
   };
 
   const icons = {
@@ -74,6 +82,20 @@
   const limitWords = (text, length = 150) => {
     const value = plainText(text);
     return value.length > length ? `${value.slice(0, length).trim()}...` : value;
+  };
+
+  const expandableText = (text, length, className = "summary-text") => {
+    const value = plainText(text);
+    if (value.length <= length) return `<p class="${className}">${esc(value)}</p>`;
+    return `
+      <p class="${className} expandable-text">
+        <span class="summary-short">${esc(value.slice(0, length).trim())}...</span>
+        <span class="summary-full">${esc(value)}</span>
+      </p>
+      <button class="more-link" type="button" data-more-toggle>
+        <span>Tampilkan lebih banyak</span><i class="bi bi-chevron-down"></i>
+      </button>
+    `;
   };
 
   const formatDate = (value, withReadTime = false) => {
@@ -135,13 +157,14 @@
             <div class="card-icon ${iconColors[index % iconColors.length]}"><i class="bi ${icons[category] || "bi-megaphone"}"></i></div>
             <span class="info-date">${esc(formatDate(item.tanggal))}</span>
             <h3>${esc(item.judul)}</h3>
-            <p>${esc(limitWords(item.ringkasan, 165))}</p>
-            <a href="#kontak">Informasi lebih lanjut <i class="bi bi-arrow-right"></i></a>
+            ${expandableText(item.ringkasan, 145, "announcement-summary")}
+            <a href="#kontak" class="card-action">Informasi lebih lanjut <i class="bi bi-arrow-right"></i></a>
           </article>
         </div>
       `;
     }).join("") : '<div class="col-12"><p class="text-secondary mb-0">Belum ada pengumuman aktif.</p></div>';
     bindShowAllButton();
+    bindMoreButtons(target);
   };
 
   const newsVisual = (item, mode, index = 0) => {
@@ -165,7 +188,7 @@
       <div class="col-lg-6">
         <article class="news-card news-main h-100">
           ${newsVisual(main, "main", 0)}
-          <div class="news-body"><span class="info-date">${esc(formatDate(main.tanggal, true))}</span><h3>${esc(main.judul)}</h3><p>${esc(limitWords(main.isi, 160))}</p><a href="#kontak">Baca selengkapnya <i class="bi bi-arrow-right"></i></a></div>
+          <div class="news-body"><span class="info-date">${esc(formatDate(main.tanggal, true))}</span><h3>${esc(main.judul)}</h3>${expandableText(main.isi, 155, "news-summary")}<a href="#kontak" class="card-action">Baca selengkapnya <i class="bi bi-arrow-right"></i></a></div>
         </article>
       </div>
       <div class="col-lg-6">
@@ -173,12 +196,13 @@
           ${rows.map((item, index) => `
             <article class="news-card news-row">
               ${newsVisual(item, "row", index + 1)}
-              <div class="news-body"><span class="info-date">${esc(formatDate(item.tanggal))}</span><h3>${esc(item.judul)}</h3><p>${esc(limitWords(item.isi, 120))}</p></div>
+              <div class="news-body"><span class="info-date">${esc(formatDate(item.tanggal))}</span><h3>${esc(item.judul)}</h3>${expandableText(item.isi, 110, "news-summary")}</div>
             </article>
           `).join("")}
         </div>
       </div>
     `;
+    bindMoreButtons(target);
   };
 
   const renderFacilities = (items) => {
@@ -195,15 +219,37 @@
   };
 
   const renderOrganization = (organization) => {
-    const list = (organization && organization.rw) || [];
+    const groups = [
+      { key: "rw", title: "Pengurus RW", icon: "bi-people-fill" },
+      { key: "bank-sampah", title: "Bank Sampah", icon: "bi-recycle" },
+      { key: "pokmas", title: "Pokmas", icon: "bi-diagram-3" }
+    ];
     const target = document.getElementById("orgList");
-    target.innerHTML = list.slice(0, 4).map((person) => `
-      <div class="org-person">
-        <span>${esc(person.jabatan)}</span>
-        <strong>${esc(person.nama)}</strong>
-      </div>
-    `).join("");
+    target.innerHTML = groups.map((group) => {
+      const list = (organization && organization[group.key]) || [];
+      return `
+        <section class="org-group">
+          <div class="org-group-heading">
+            <span><i class="bi ${group.icon}"></i></span>
+            <div><h3>${group.title}</h3><small>${list.length ? `${list.length} pengurus` : "Belum ada data"}</small></div>
+          </div>
+          <div class="org-members">
+            ${list.length ? list.map((person) => `
+              <article class="org-person">
+                ${imageUrl(person, "w400") ? `<img src="${esc(imageUrl(person, "w400"))}" alt="${esc(person.nama)}">` : `<div class="org-avatar">${esc(initials(person.nama))}</div>`}
+                <div>
+                  <span>${esc(person.jabatan || "-")}</span>
+                  <strong>${esc(person.nama || "-")}</strong>
+                </div>
+              </article>
+            `).join("") : '<p class="org-empty">Data pengurus belum tersedia.</p>'}
+          </div>
+        </section>
+      `;
+    }).join("");
   };
+
+  const initials = (name) => String(name || "RW").split(/\s+/).filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase();
 
   const bindShowAllButton = () => {
     const showAllButton = document.getElementById("showAllAnnouncements");
