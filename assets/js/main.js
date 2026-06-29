@@ -304,18 +304,13 @@ const clearContainers = () => {
       });
     });
   };
-  // Revisi fungsi renderContent
   const renderContent = (data) => {
-  // Bersihkan sebelum render
-  clearContainers();
-
-  // Render hanya jika data ada
-  if (data.himbauan) renderHero(data.himbauan);
-  if (data.announcements) renderAnnouncements(data.announcements);
-  if (data.news) renderNews(data.news);
-  if (data.facilities) renderFacilities(data.facilities);
-  if (data.organization) renderOrganization(data.organization);
-};
+    renderHero(data.himbauan || fallback.himbauan);
+    renderAnnouncements(data.announcements || fallback.announcements);
+    renderNews(data.news || fallback.news);
+    renderFacilities(data.facilities || fallback.facilities);
+    renderOrganization(data.organization || fallback.organization);
+  };
 
   window.addEventListener("scroll", handleScroll, { passive: true });
   handleScroll();
@@ -331,7 +326,7 @@ const clearContainers = () => {
   backToTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   document.getElementById("year").textContent = new Date().getFullYear();
   // Tampilkan data fallback terlebih dahulu agar layar tidak kosong
-  renderContent(fallback);
+  //renderContent(fallback);
   
   // Tarik data asli menggunakan metode GET
   getApi(cfg.PUBLIC_ACTION || "publicContent")
