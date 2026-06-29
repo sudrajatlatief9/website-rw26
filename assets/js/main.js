@@ -72,24 +72,47 @@
     return await response.json();
   };
 
-  // 6. Inisialisasi
-  document.addEventListener("DOMContentLoaded", () => {
-    clearContainers(); // Tampilkan loading saat halaman buka
-    
-    getApi(cfg.PUBLIC_ACTION || "publicContent")
-      .then(data => {
-        if (data.ok) renderContent(data);
-        else throw new Error(data.message);
-      })
-      .catch(err => {
-        console.warn("API Error, menggunakan fallback:", err);
-        renderContent(fallback); // Jika gagal, tampilkan data cadangan
-      });
+  // ... (biarkan semua fungsi const di atas tetap seperti semula)
 
-    // Event listener tambahan...
-    window.addEventListener("scroll", () => {
-      navbar.classList.toggle("scrolled", window.scrollY > 24);
-      backToTop.classList.toggle("show", window.scrollY > 500);
+// 6. INISIALISASI YANG DIPERBAIKI
+document.addEventListener("DOMContentLoaded", () => {
+  // Panggil fungsi pembersih saat DOM siap
+  clearContainers(); 
+
+  // Event listener scroll
+  window.addEventListener("scroll", handleScroll, { passive: true });
+  handleScroll();
+
+  // Event listener untuk menu navigasi
+  document.querySelectorAll('a[href^="#"]').forEach((link) => {
+    link.addEventListener("click", (e) => {
+      if (collapseElement && collapseElement.classList.contains("show")) {
+        bootstrap.Collapse.getOrCreateInstance(collapseElement).hide();
+      }
     });
   });
-})();
+
+  // Event listener back to top
+  if (backToTop) {
+    backToTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  }
+
+  // Set tahun di footer
+  const yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  // Tampilkan data fallback terlebih dahulu
+  renderContent(fallback);
+  
+  // Tarik data asli
+  getApi(cfg.PUBLIC_ACTION || "publicContent")
+    .then((data) => {
+      // Pastikan data valid sebelum render
+      if (data && data.ok) {
+        renderContent(data);
+      }
+    })
+    .catch((error) => {
+      console.warn("API gagal dimuat, menggunakan data fallback:", error.message);
+    });
+});
